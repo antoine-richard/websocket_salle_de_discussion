@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Salle de discussion (mise en oeuvre simple des WebSockets)</title>
+	<script src="lib/jquery-1.7.1.min.js"></script>
+	<script type="text/javascript">
+	
+	/**
+	 * Module de gestion de la salle de discussion
+	 */
+	var chatRoom = function() {
+	
+		var socket;
+		var host = 'localhost', port = '10000';
+		var lightColor = '#aaa', darkColor = '#444';
+		
+		/**
+		 * Création de la Websocket
+		 */
+		function init(WebSocketConstructor) {
+			socket = new WebSocketConstructor('ws://'+host+':'+port+'/');
+			socket.onmessage = receive;
+			socket.onopen = function() {
+				print('Connexion ouverte (statut : '+socket.readyState+')', lightColor);
+			};
+		}
+		
+		/**
+		 * Reception d'un message
+		 */
+		function receive(response) {
+			print('Reçu : '+response.data);
+		}
+		
+		/**
+		 * Envoi d'un message
+		 */
+		function send(message) {
+			socket.send(message);
+			print('Envoyé : '+message, lightColor);
+		}
+		
+		/**
+		 * Affichage d'un message à l'écran
+		 */
+		function print(message, color) {
+			color = color || darkColor;
+			$('#conversation').append('<p style="color: '+color+'">'+message+'</p>');
+			$('#conversation').scrollTop($('#conversation').prop('scrollHeight'));
+		}
+		
+		/** API publique */
+		return {
+			start: init,
+			send: send
+		};
+	
+	}();
+	
+	$(function() {
+		
+		// Touche Entrée pour envoyer des messages
+		$('#message').on('keypress', function(event) {
+			if (event.which == 13) {
+				chatRoom.send($('#message').val());
+				$('#message').val('');
+			}
+		});
+		
+		// Test du support des WebSockets (ou MozWebSocket pour Firefox v6 à v10)
+		var WebSocketConstructor = window.WebSocket || window.MozWebSocket;
+		if (WebSocketConstructor) {
+			chatRoom.start(WebSocketConstructor); // Lancement de la salle de discussion
+		} else {
+			alert('Votre navigateur ne supporte pas les WebSockets');
+		}
+		
+	});
+	
+	</script>
+	<style>
+	
+		/* Mise en page */
+		body {
+			margin: 0;
+			padding: 0;
+			font: 16px helvetica, arial, sans-serif;
+		}
+		#content {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			height: 440px;
+			width: 600px;
+			margin-top: -220px;
+			margin-left: -300px;
+		}
+		
+		/* Affichage de la conversation */
+		#conversation {
+			height: 400px;
+			overflow: auto;
+			border: 1px solid #444;
+		}
+		#conversation p {
+			margin: 0;
+			padding: 5px;
+			line-height: 20px;
+		}
+		
+		/* Envoi de message */
+		input#message {
+			font: 16px helvetica, arial, sans-serif;
+			color: #444;
+			border: 1px solid #444;
+			padding: 4px 5px;
+			width: 588px;
+			margin-top: 5px;
+		}
+		
+	</style>
+</head>
+<body>
+	<div id="content">
+		<div id="conversation"></div>
+		<input type="text" id="message" autofocus="autofocus" placeholder="Saisissez votre message ici" />
+	</div>
+</body>
+</html>
